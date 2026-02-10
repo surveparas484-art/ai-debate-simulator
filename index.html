@@ -6,87 +6,172 @@
     body {
       background: #111;
       color: white;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
+      text-align: center;
+      margin: 0;
       padding: 20px;
     }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
     input, select, textarea, button {
-      width: 100%;
-      margin: 8px 0;
+      width: 90%;
+      max-width: 600px;
       padding: 10px;
+      margin: 5px 0;
       border-radius: 5px;
       border: none;
+      font-size: 14px;
     }
+
+    textarea {
+      resize: none;
+      height: 80px;
+    }
+
     button {
       background: #22c55e;
       color: white;
       font-weight: bold;
       cursor: pointer;
     }
-    .chat-box {
+
+    #chat {
       margin-top: 20px;
-      background: #1a1a1a;
+      background: #1e1e1e;
       padding: 15px;
-      border-radius: 8px;
-      min-height: 150px;
+      border-radius: 10px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 300px;
+      overflow-y: auto;
+      text-align: left;
     }
-    .user { color: #22c55e; margin-bottom: 10px; }
-    .ai { color: #f97316; margin-bottom: 10px; }
+
+    .user {
+      color: #4ade80;
+      margin-bottom: 10px;
+    }
+
+    .ai {
+      color: #f59e0b;
+      margin-bottom: 15px;
+    }
+
+    .scoreboard {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: gray;
+      font-style: italic;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>🤖 AI Debate Simulator</h2>
+<h1>🤖 AI Debate Simulator</h1>
 
-<input type="text" id="topic" placeholder="Enter debate topic" />
+<input id="topic" placeholder="Enter debate topic" />
+
 <select id="side">
   <option value="For">For</option>
   <option value="Against">Against</option>
 </select>
+
 <textarea id="argument" placeholder="Enter your argument"></textarea>
 
 <button onclick="sendArgument()">Send Argument</button>
 
-<div class="chat-box" id="chat"></div>
+<div class="scoreboard">
+  Round: <span id="round">0</span> |
+  You: <span id="userScore">0</span> |
+  AI: <span id="aiScore">0</span>
+</div>
+
+<div id="chat"></div>
 
 <script>
+
+let round = 0;
+let userScore = 0;
+let aiScore = 0;
 
 async function sendArgument() {
 
   const topic = document.getElementById("topic").value;
   const side = document.getElementById("side").value;
-  const argument = document.getElementById("argument").value;
-  const chatBox = document.getElementById("chat");
+  const argumentBox = document.getElementById("argument");
+  const argument = argumentBox.value;
+  const chat = document.getElementById("chat");
 
   if (!topic || !argument) {
-    alert("Please fill all fields");
+    alert("Please enter topic and argument");
     return;
   }
 
-  chatBox.innerHTML += `<div class="user"><b>You:</b> ${argument}</div>`;
+  round++;
+  document.getElementById("round").innerText = round;
+
+  // Show user message
+  chat.innerHTML += `<div class="user"><b>You:</b> ${argument}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+
+  // Clear input immediately
+  argumentBox.value = "";
+  argumentBox.focus();
+
+  // Loading message
+  const loadingDiv = document.createElement("div");
+  loadingDiv.className = "loading";
+  loadingDiv.innerText = "AI is thinking...";
+  chat.appendChild(loadingDiv);
+  chat.scrollTop = chat.scrollHeight;
 
   try {
+
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        topic,
-        side,
-        argument
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, side, argument })
     });
 
     const data = await response.json();
 
-    chatBox.innerHTML += `<div class="ai"><b>AI:</b> ${data.reply}</div>`;
+    loadingDiv.remove();
+
+    chat.innerHTML += `<div class="ai"><b>AI:</b> ${data.reply}</div>`;
+
+    // Simple scoring logic
+    if (argument.length > 80) {
+      userScore++;
+    } else {
+      aiScore++;
+    }
+
+    document.getElementById("userScore").innerText = userScore;
+    document.getElementById("aiScore").innerText = aiScore;
+
+    chat.scrollTop = chat.scrollHeight;
 
   } catch (error) {
-    chatBox.innerHTML += `<div class="ai"><b>AI:</b> Server error</div>`;
+    loadingDiv.remove();
+    chat.innerHTML += `<div class="ai"><b>AI:</b> Server error</div>`;
   }
-
 }
+
+// Press Enter to send (Shift+Enter for new line)
+document.getElementById("argument").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendArgument();
+  }
+});
 
 </script>
 
