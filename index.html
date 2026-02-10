@@ -1,173 +1,93 @@
-<!DOCTYPE html>
+      <!DOCTYPE html>
 <html>
 <head>
   <title>AI Debate Simulator</title>
   <style>
     body {
       background: #111;
-      font-family: Arial, sans-serif;
       color: white;
+      font-family: Arial, sans-serif;
       padding: 20px;
     }
-
-    h1 {
-      text-align: center;
-    }
-
     input, select, textarea, button {
       width: 100%;
-      padding: 12px;
       margin: 8px 0;
-      border-radius: 8px;
+      padding: 10px;
+      border-radius: 5px;
       border: none;
-      font-size: 16px;
     }
-
     button {
-      background: #2ecc71;
+      background: #22c55e;
       color: white;
       font-weight: bold;
       cursor: pointer;
     }
-
     .chat-box {
-      background: #1c1c1c;
+      margin-top: 20px;
+      background: #1a1a1a;
       padding: 15px;
-      border-radius: 10px;
-      margin-top: 15px;
-      max-height: 400px;
-      overflow-y: auto;
+      border-radius: 8px;
+      min-height: 150px;
     }
-
-    .user { color: #2ecc71; margin-bottom: 10px; }
-    .ai { color: #f39c12; margin-bottom: 15px; }
-
-    .score-board {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-      font-weight: bold;
-    }
+    .user { color: #22c55e; margin-bottom: 10px; }
+    .ai { color: #f97316; margin-bottom: 10px; }
   </style>
 </head>
+
 <body>
 
-<h1>🤖 AI Debate Simulator</h1>
+<h2>🤖 AI Debate Simulator</h2>
 
-<input type="text" id="topic" placeholder="Enter debate topic">
-
+<input type="text" id="topic" placeholder="Enter debate topic" />
 <select id="side">
   <option value="For">For</option>
   <option value="Against">Against</option>
 </select>
-
 <textarea id="argument" placeholder="Enter your argument"></textarea>
 
 <button onclick="sendArgument()">Send Argument</button>
 
-<div class="score-board">
-  <div>Round: <span id="round">0</span></div>
-  <div>You: <span id="userScore">0</span></div>
-  <div>AI: <span id="aiScore">0</span></div>
-</div>
-
-<div class="chat-box" id="chatBox"></div>
+<div class="chat-box" id="chat"></div>
 
 <script>
-const API_KEY = "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";
-
-let chatHistory = [];
-let round = 0;
-let userScore = 0;
-let aiScore = 0;
 
 async function sendArgument() {
+
   const topic = document.getElementById("topic").value;
   const side = document.getElementById("side").value;
   const argument = document.getElementById("argument").value;
-  const chatBox = document.getElementById("chatBox");
+  const chatBox = document.getElementById("chat");
 
-  if (!argument.trim()) return;
-
-  round++;
-  document.getElementById("round").innerText = round;
+  if (!topic || !argument) {
+    alert("Please fill all fields");
+    return;
+  }
 
   chatBox.innerHTML += `<div class="user"><b>You:</b> ${argument}</div>`;
 
-  chatHistory.push({
-    role: "user",
-    content: `Debate Topic: ${topic}
-User Side: ${side}
-User Argument: ${argument}`
-  });
-
-  document.getElementById("argument").value = "";
-
   try {
-    const response = await const response = await fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    topic,
-    side,
-    argument: userArgument
-  })
-});
-
-const data = await response.json();
-
-if (data.reply) {
-  resultDiv.innerHTML += `<div class="ai">AI: ${data.reply}</div>`;
-} else {
-  resultDiv.innerHTML += `<div class="ai">AI failed to respond.</div>`;
-}
+    const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + API_KEY,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional debate opponent.
-Always argue strongly against the user's position.
-Be logical, challenging and structured.
-Respond in 6-8 strong lines.`
-          },
-          ...chatHistory
-        ]
+        topic,
+        side,
+        argument
       })
     });
 
     const data = await response.json();
 
-    const aiReply = data.choices[0].message.content;
-
-    chatHistory.push({
-      role: "assistant",
-      content: aiReply
-    });
-
-    chatBox.innerHTML += `<div class="ai"><b>AI:</b> ${aiReply}</div>`;
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Simple scoring logic
-    if (aiReply.length > argument.length) {
-      aiScore++;
-      document.getElementById("aiScore").innerText = aiScore;
-    } else {
-      userScore++;
-      document.getElementById("userScore").innerText = userScore;
-    }
+    chatBox.innerHTML += `<div class="ai"><b>AI:</b> ${data.reply}</div>`;
 
   } catch (error) {
-    chatBox.innerHTML += `<div style="color:red;">Error: ${error.message}</div>`;
+    chatBox.innerHTML += `<div class="ai"><b>AI:</b> Server error</div>`;
   }
+
 }
+
 </script>
 
 </body>
